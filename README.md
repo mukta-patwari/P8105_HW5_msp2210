@@ -1,1 +1,3 @@
-# P8105_HW5_msp2210
+# Homework 5
+
+This is a repository for Homework 5.
