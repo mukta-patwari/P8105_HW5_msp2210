@@ -30,17 +30,10 @@ scale_fill_discrete = scale_fill_viridis_d
 
 # Problem 1
 
-```{r}
-birthdays = sample(1:365, 5, replace = TRUE)
-
-repeated_bday = length(unique(birthdays)) < 5
-
-repeated_bday
-```
+**Write a function that, for a fixed group size, randomly draws “birthdays” for each person; checks whether there are duplicate birthdays in the group; and returns TRUE or FALSE based on the result.**
 
 ```{r}
 bday_sim = function(n_room) {
-  
     birthdays = sample(1:365, n_room, replace = TRUE)
     
     repeated_bday = length(unique(birthdays)) < n_room
@@ -49,12 +42,14 @@ bday_sim = function(n_room) {
   }
 ```
 
+**Next, run this function 10000 times for each group size between 2 and 50. For each group size, compute the probability that at least two people in the group will share a birthday by averaging across the 10000 simulation runs.**
+
 ```{r}
 bday_sim_results =
   expand_grid(
     bdays = 2:50,
     iter = 1:10000
-  ) %>% 
+  ) %>%
   mutate(
     results = map_lgl(bdays, bday_sim)
   ) %>% 
@@ -66,11 +61,17 @@ bday_sim_results =
   )
 ```
 
-plot
+**Make a plot showing the probability as a function of group size, and comment on your results.**
 
 ```{r}
 bday_sim_results %>% 
   ggplot(aes(x = bdays, y = prob_repeat)) +
   geom_point(color = "red") +
-  geom_line()
+  geom_line() +
+  labs(
+    x = "Number of people",
+    y = "Probability of repeated birthdays"
+  )
 ```
+
+The plot shows that as sample size increases, the probability of repeated birthdays also increases. At around 23 people, the probability of repeated birthdays is 50%, and at around 40 people the probability of repeated birthdays is 87.5%. By the time the sample size is 50, the probability is close to 100%.
