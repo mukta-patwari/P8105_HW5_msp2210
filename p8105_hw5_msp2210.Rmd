@@ -66,8 +66,8 @@ bday_sim_results =
 ```{r}
 bday_sim_results %>% 
   ggplot(aes(x = bdays, y = prob_repeat)) +
-  geom_point(color = "red") +
-  geom_line() +
+  geom_smooth(se = FALSE) +
+  geom_point() +
   labs(
     x = "Number of people",
     y = "Probability of repeated birthdays"
@@ -87,9 +87,14 @@ sim_t_test = function(n_subj = 30, sigma = 5, mu = 0) {
     tibble(
       x = rnorm(n = n_subj, mean = mu, sd = sigma)
     ) %>% 
-    summarize(tidy(t.test(x, mu = 0))) %>%
-    select(estimate, p.value, )
-}
+    summarize(tidy(t.test(x, mu = 0)))} %>% 
+  mutate(
+    hypothesis_test = case_when(
+      p.value < 0.05 ~ "Reject",
+      p.value > 0.05 ~ "Fail to Reject"
+    )) %>% 
+  select(estimate, p.value, hypothesis_test)
+
 
 sim_results_df =
   expand_grid(
@@ -101,3 +106,30 @@ sim_results_df =
   unnest(results)
 ```
 
+**Make a plot showing the proportion of times the null was rejected (the power of the test) on the y axis and the true value of mu on the x axis. Describe the association between effect size and power.**
+
+```{r}
+power_plot =
+  sim_results_df %>% 
+  group_by(mu) %>% 
+  summarize(
+    power = mean(hypothesis_test == "Reject"),
+    .groups = "drop"
+  ) %>% 
+  ggplot(aes(x = mu, y = power)) +
+  geom_smooth(se = FALSE) +
+  geom_point() +
+  scale_x_continuous(
+    breaks = 0:6
+  ) +
+  labs(
+    x = "True value of mu",
+    y = "Power",
+  )
+
+print(power_plot)
+```
+
+**Make a plot showing the average estimate of mu-hat on the y axis and the true value of mu on the x axis. Make a second plot (or overlay on the first) the average estimate of mu-hat only in samples for which the null was rejected on the y axis and the true value of mu on the x axis.** 
+
+## Problem 3
