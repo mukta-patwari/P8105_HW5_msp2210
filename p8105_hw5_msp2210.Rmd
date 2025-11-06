@@ -186,10 +186,34 @@ No, the sample average of mu hat for tests where the null hypothesis was rejecte
 
 ## Problem 3
 
+**Describe the raw data. Create a city_state variable (e.g. “Baltimore, MD”) and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).**
+
 ```{r}
 homicide_data =
   read_csv("homicide-data.csv") %>% 
   janitor::clean_names() %>% 
-  mutate(city_state = paste(city, state, sep = ", "))
+  mutate(
+    city_state = str_c(city, state, sep = ", ")
+  ) %>% 
+  group_by(city_state) %>% 
+  summarize(
+    total_homicides = n(),
+    unsolved_homicides = sum(disposition %in% c("Closed without arrest", "Open/No arrest"))
+  )
 ```
 
+**For the city of Baltimore, MD, use the `prop.test` function to estimate the proportion of homicides that are unsolved; save the output of `prop.test` as an R object, apply the `broom::tidy` to this object and pull the estimated proportion and confidence intervals from the resulting tidy dataframe.**
+
+```{r}
+homicide_data %>% 
+  filter(city_state == "Baltimore, MD") %>% 
+  summarize(
+  baltimore_prop = list(prop.test(unsolved_homicides, total_homicides))
+  ) %>% 
+  mutate(results = map(baltimore_prop, broom::tidy)) %>% 
+  unnest(results) %>% 
+  select(estimate, conf.low, conf.high) %>% 
+  knitr::kable(digits = 3)
+```
+
+**Now run prop.test for each of the cities in your dataset, and extract both the proportion of unsolved homicides and the confidence interval for each. Do this within a “tidy” pipeline, making use of purrr::map, purrr::map2, list columns and unnest as necessary to create a tidy dataframe with estimated proportions and CIs for each city.**
