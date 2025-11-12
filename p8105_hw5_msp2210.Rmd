@@ -182,16 +182,27 @@ mu_hat_reject_plot =
 mu_hat_plot + mu_hat_reject_plot
 ```
 
+**Is the sample average of mu hat across tests for which the null is rejected approximately equal to the true value of mu? Why or why not**
+
 No, the sample average of mu hat for tests where the null hypothesis was rejected is not approximately equal o the true mu value. When comparing the true value of mu and the average estimates of mu hat, we see a 1:1 line, which illustrates that the average estimate of mu hat is unbiased. However, when conditioning on the rejected mu hat estimates, the association appears to be biased. Plotting only the rejected mu hat estimates removes instances where mu hat is close to mu, and gives us the more extreme mu hat values. Accordingly, the line is biased. For smaller values of mu, less rejections of the null hypothesis are occurring and the estimated mu hat is slightly larger than the true value. As the true value of mu increases, more rejections of the null hypothesis occur and this becomes more consistent with the true values, but there is still bias due to chance.
 
 ## Problem 3
 
-**Describe the raw data. Create a city_state variable (e.g. “Baltimore, MD”) and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).**
+**Describe the raw data.**
 
 ```{r}
 homicide_data =
   read_csv("homicide-data.csv") %>% 
-  janitor::clean_names() %>% 
+  janitor::clean_names() 
+```
+
+The raw data contains information on homicides in various cities across the United States. There are `r nrow(homicide_data)` observations in the dataset, and the following variables `r colnames(homicide_data)`. The key variable is disposition, which has 3 categories: "Closed by arrest", "Closed without arrest", and "Open/No arrest". The latter two categories are considered to be unsolved homicides.
+
+**Create a city_state variable (e.g. “Baltimore, MD”) and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).**
+
+```{r}
+homicide_data =
+  homicide_data %>% 
   mutate(
     city_state = str_c(city, state, sep = ", ")
   ) %>% 
@@ -206,14 +217,42 @@ homicide_data =
 
 ```{r}
 homicide_data %>% 
+  group_by(city_state) %>% 
   filter(city_state == "Baltimore, MD") %>% 
   summarize(
   baltimore_prop = list(prop.test(unsolved_homicides, total_homicides))
   ) %>% 
   mutate(results = map(baltimore_prop, broom::tidy)) %>% 
   unnest(results) %>% 
-  select(estimate, conf.low, conf.high) %>% 
+  select(city_state, estimate, conf.low, conf.high) %>% 
   knitr::kable(digits = 3)
 ```
 
-**Now run prop.test for each of the cities in your dataset, and extract both the proportion of unsolved homicides and the confidence interval for each. Do this within a “tidy” pipeline, making use of purrr::map, purrr::map2, list columns and unnest as necessary to create a tidy dataframe with estimated proportions and CIs for each city.**
+**Now run prop.test for each of the cities in your dataset, and extract both the proportion of unsolved homicides and the confidence interval for each. Do this within a “tidy” pipeline, making use of purrr::map, purrr::map2, list columns and unnest as necessary to create a tidy dataframe with estimated proportions and CIs for each city. Create a plot that shows the estimates and CIs for each city – check out geom_errorbar for a way to add error bars based on the upper and lower limits. Organize cities according to the proportion of unsolved homicides.**
+
+```{r}
+library(purrr)
+
+homicide_data %>% 
+  group_by(city_state) %>% 
+  mutate(
+    prop_test = map2(unsolved_homicides, total_homicides, ~ prop.test(.x, .y)),
+    results = map(prop_test, broom::tidy)
+  ) %>%
+  ungroup() %>% 
+  unnest(results) %>%
+  select(city_state, estimate, conf.low, conf.high) %>% 
+  arrange(estimate) %>% 
+  mutate(
+    city_state = fct_inorder(city_state)
+  ) %>% 
+  ggplot(aes(x = city_state, y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) +
+  labs(
+    x = "City, State",
+    y = "Proportion of Unsolved Homicide per City (with 95% CI)"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
