@@ -250,9 +250,9 @@ homicide_data %>%
   geom_point() +
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) +
   labs(
-    x = "City, State",
-    y = "Proportion of Unsolved Homicide per City (with 95% CI)"
+    title = "Proportion of Unsolved Homicides per City",
+    x = "City",
+    y = "Proportion (with 95% CI)"
   ) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1))
 ```
-
